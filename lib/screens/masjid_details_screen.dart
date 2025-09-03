@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../models/masjid_submission.dart';
+import '../shared/map_utils.dart';
+import '../shared/time_util.dart';
 
 class MasjidDetailScreen extends StatelessWidget {
   final MasjidSubmission office;
 
-  MasjidDetailScreen({required this.office});
+  const MasjidDetailScreen({super.key, required this.office});
 
-  Future<void> _openMap() async {
-    final url = 'https://www.google.com/maps/search/?api=1&query=${office.latitude},${office.longitude}';
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      throw 'Could not launch $url';
-    }
-  }
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,13 +31,18 @@ class MasjidDetailScreen extends StatelessWidget {
             ),
             SizedBox(height: 16),
             _buildInfoRow('City', office.city),
-            _buildInfoRow('Juma Time', office.driveStartTime),
+            _buildInfoRow('Juma Time', TimeUtils.formatFromString(office.driveStartTime)),
             //if (office.contactPerson != null) _buildInfoRow('Contact', office.contactPerson!),
             //if (office.specialInstructions != null) _buildInfoRow('Instructions', office.specialInstructions!),
             //if (office.distance != null) _buildInfoRow('Distance', '${office.distance!.toStringAsFixed(1)} km'),
             SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _openMap,
+              onPressed: () => MapUtils.openMap(
+                              office.latitude,
+                              office.longitude,
+                              label: office.name, // this will be used in Google Maps
+                              context: context,   // pass context if you want snackbar on failure
+                              ),
               icon: Icon(Icons.map),
               label: Text('Open in Maps'),
               style: ElevatedButton.styleFrom(

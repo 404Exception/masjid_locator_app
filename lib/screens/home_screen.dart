@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
-import '../providers/masjidProvider.dart';
+import '../providers/masjid_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/masjid_card.dart';
 import '../widgets/search_bar.dart' as custom_search;
@@ -9,11 +9,13 @@ import 'masjid_details_screen.dart';
 import 'submit_masjid_screen.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  HomeScreenState createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   Position? _currentPosition;
   String _selectedTab = 'nearby';
 
@@ -34,13 +36,16 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Fetch nearby offices
       if (_selectedTab == 'nearby') {
+        if (!mounted) return;
         Provider.of<MasjidProvider>(context, listen: false).fetchNearbyOffices(
           position.latitude,
           position.longitude,
+          context,
         );
       }
     } catch (e) {
-      print('Error getting location: $e');
+      'Error getting location';
+      //print('Error getting location: $e');
     }
   }
 
@@ -62,8 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
           PopupMenuButton(
       itemBuilder: (context) => [
         PopupMenuItem(
-          child: Text('Logout'),
           value: 'logout',
+          child: Text('Logout'),
         ),
       ],
       onSelected: (value) {
@@ -113,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Provider.of<MasjidProvider>(context, listen: false).fetchNearbyOffices(
               _currentPosition!.latitude,
               _currentPosition!.longitude,
+              context
             );
           }
         },
@@ -149,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (officeProvider.offices.isEmpty) {
-      return Center(child: Text('No offices found nearby'));
+      return Center(child: Text('No Masjid found nearby'));
     }
 
     return ListView.builder(

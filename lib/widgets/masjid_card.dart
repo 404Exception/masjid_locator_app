@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/masjid_submission.dart';
+import '../shared/time_util.dart';
 
 class MasjidCard extends StatelessWidget {
   final MasjidSubmission office;
@@ -23,7 +24,7 @@ class MasjidCard extends StatelessWidget {
           children: [
             SizedBox(height: 2),
             Text(
-              'Juma - ${office.driveStartTime}',
+              'Juma - ${TimeUtils.formatFromString(office.driveStartTime)}',
               style: TextStyle(color: Colors.green),
             ),
             // if (office.distance != null)

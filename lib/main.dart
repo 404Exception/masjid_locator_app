@@ -1,26 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-//import 'package:shared_preferences/shared_preferences.dart';
+import 'providers/loading_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
 import 'providers/auth_provider.dart';
-import 'providers/masjidProvider.dart';
+import 'providers/masjid_provider.dart';
+import 'constants/environment.dart';
+import 'services/api_service.dart';
+import 'services/auth_service.dart';
+import 'widgets/global_loading_overlay.dart';
 
 void main() {
-  runApp(const MyApp());
+final apiService = ApiService();
+final authService = AuthService(api: apiService);
+// Set environment (you can change this based on build flavor)
+  AppConfig.currentEnv = Environment.staging;
+
+  runApp(MyApp(authService: authService));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthService authService;
+
+  const MyApp({super.key, required this.authService});
+  
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => LoadingProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider(authService: authService)),
         ChangeNotifierProvider(create: (_) => MasjidProvider()),
+        // ChangeNotifierProvider(create: (_) => LoadingProvider()),
+        // ProxyProvider<LoadingProvider, AuthProvider>(
+        //   update: (_, loadingProvider, __) => AuthProvider(
+        //     authService: authService,
+        //     loadingProvider: loadingProvider,
+        //   ),
+        // ),
       ],
       child: MaterialApp(
         title: 'Masjid Locator',
@@ -28,7 +48,9 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        home: AuthWrapper(),
+        home: GlobalLoadingOverlay(
+          child: AuthWrapper(),
+        ),
         debugShowCheckedModeBanner: false,
       ),
     );

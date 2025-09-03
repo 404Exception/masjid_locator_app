@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../constants/environment.dart';
+import '../services/auth_service.dart';
 
 class AuthProvider with ChangeNotifier {
   String? _token;
@@ -21,7 +23,7 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String get error => _error;
 
-  static const String _apiUrl = 'http://localhost:5074/api/Auth';
+  static final String _apiUrl = '${AppConfig.baseUrl}/Auth';
 
   // Initialize auth from shared preferences
   Future<void> initAuth() async {
@@ -34,23 +36,17 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Login method
+  final AuthService authService;
+
+  AuthProvider({required this.authService});
+
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     _error = '';
     notifyListeners();
-
     try {
-      final response = await http.post(
-        Uri.parse('$_apiUrl/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': email,
-          'password': password,
-        }),
-      );
-
-      if (response.statusCode == 200) {
+      final response = await authService.login(email, password);
+      if (response.statusCode == 200 ) {
         final responseData = json.decode(response.body);
         _token = responseData['token'];
         _userId = responseData['userId'];
@@ -70,20 +66,21 @@ class AuthProvider with ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        final errorData = json.decode(response.body);
-        _error = errorData['message'] ?? 'Login failed';
+        //final errorData = json.decode(response.body);
+        _error =
+            'Username or Password incorrect'; //errorData['message'] ?? 'Login failed';
         _isLoading = false;
         notifyListeners();
         return false;
       }
     } catch (e) {
-      _error = 'Login error: $e';
+      _error = 'Please try after some time'; //'Login error: $e';
       _isLoading = false;
       notifyListeners();
       return false;
     }
   }
-
+  
   // Register method
   Future<bool> register(String email, String password, String fullName) async {
     _isLoading = true;
@@ -91,15 +88,16 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await http.post(
-        Uri.parse('$_apiUrl/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': email,
-          'password': password,
-          'fullName': fullName,
-        }),
-      );
+      final response = await authService.register(fullName, email, password);
+      // final response = await http.post(
+      //   Uri.parse('$_apiUrl/register'),
+      //   headers: {'Content-Type': 'application/json'},
+      //   body: json.encode({
+      //     'email': email,
+      //     'password': password,
+      //     'fullName': fullName,
+      //   }),
+      // );
 
       if (response.statusCode == 200) {
         _error = '';
@@ -131,9 +129,7 @@ class AuthProvider with ChangeNotifier {
       final response = await http.post(
         Uri.parse('$_apiUrl/forgot-password'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': email,
-        }),
+        body: json.encode({'email': email}),
       );
 
       if (response.statusCode == 200) {
@@ -173,40 +169,6 @@ class AuthProvider with ChangeNotifier {
 
     notifyListeners();
   }
-
-  // Get authenticated HTTP headers
-  Map<String, String> getAuthHeaders() {
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $_token',
-    };
-  }
-
-  // Fetch user details
-  // Future<void> _fetchUserDetails() async {
-  //   if (_token == null) return;
-
-  //   try {
-  //     final response = await http.get(
-  //       Uri.parse('$_apiUrl/user-details'),
-  //       headers: getAuthHeaders(),
-  //     );
-
-  //     if (response.statusCode == 200) {
-  //       final userData = json.decode(response.body);
-  //       _userEmail = userData['email'];
-  //       _userName = userData['fullName'];
-        
-  //       final prefs = await SharedPreferences.getInstance();
-  //       prefs.setString('userEmail', _userEmail!);
-  //       prefs.setString('userName', _userName!);
-        
-  //       notifyListeners();
-  //     }
-  //   } catch (e) {
-  //     print('Error fetching user details: $e');
-  //   }
-  // }
 
   // Clear error
   void clearError() {

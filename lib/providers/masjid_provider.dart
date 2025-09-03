@@ -1,10 +1,11 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-// import 'package:provider/provider.dart';
-// import '../providers/auth_provider.dart' as authProvider;
+import 'package:provider/provider.dart';
+import 'auth_provider.dart';
 import '../models/masjid_submission.dart';
+import '../constants/environment.dart';
 
 class MasjidProvider with ChangeNotifier {
   List<MasjidSubmission> _offices = [];
@@ -15,6 +16,8 @@ class MasjidProvider with ChangeNotifier {
   List<MasjidSubmission> get offices => _filteredOffices;
   bool get isLoading => _isLoading;
   String get error => _error;
+
+  static final String _apiUrl = '${AppConfig.baseUrl}/Masjid';
 
   //   Future<void> fetchNearbyOffices(double lat, double lng, {double radius = 10}) async {
   //     _isLoading = true;
@@ -45,7 +48,8 @@ class MasjidProvider with ChangeNotifier {
 
   Future<void> fetchNearbyOffices(
     double lat,
-    double lng, {
+    double lng,
+    BuildContext context, {
     double radius = 10,
   }) async {
     _isLoading = true;
@@ -64,9 +68,7 @@ class MasjidProvider with ChangeNotifier {
       };
 
       final response = await http.get(
-        Uri.parse(
-          'http://localhost:5074/api/Masjid/nearby?lat=$lat&lng=$lng&radius=$radius',
-        ),
+        Uri.parse('$_apiUrl/nearby?lat=$lat&lng=$lng&radius=$radius'),
         headers: headers,
       );
 
@@ -78,7 +80,7 @@ class MasjidProvider with ChangeNotifier {
           final dynamic abc = responseData
               .map((json) => MasjidSubmission.fromJson(json))
               .toList();
-              _offices = abc;
+          _offices = abc;
         } else if (responseData is Map<String, dynamic>) {
           _offices = [MasjidSubmission.fromJson(responseData)];
         } else {
@@ -89,8 +91,9 @@ class MasjidProvider with ChangeNotifier {
         _filteredOffices = _offices;
         _error = '';
       } else if (response.statusCode == 401) {
-        _error = 'Please login again';
-        //authProvider.logout();
+        if (context.mounted) {
+        await Provider.of<AuthProvider>(context, listen: false).logout();
+        }
       } else {
         _error = 'Failed to load offices';
       }
@@ -118,9 +121,15 @@ class MasjidProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      final token = await _getAuthToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
       final response = await http.get(
-        Uri.parse('http://localhost:5074/api/Masjid/city?city=$city'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$_apiUrl/city?city=$city'),
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
